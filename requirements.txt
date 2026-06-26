@@ -1,0 +1,20 @@
+# Core Multi-Agent ADK Framework
+google-adk
+
+# Data Validation & Parsing
+pydantic
+
+# HTTP Requests (for live RxNorm and PubMed APIs)
+requests
+
+# Model Context Protocol (MCP) Server support
+mcp
+fastmcp
+
+# Web Frontend Dashboard
+streamlit
+
+# FastAPI Backend & Web Server
+fastapi
+uvicorn
+

@@ -5,7 +5,7 @@ import type { ChatMessage, PatientDigitalTwin } from "../lib/types";
 interface Props {
   twin: PatientDigitalTwin;
   chatHistory: ChatMessage[];
-  onSend: (message: string) => void;
+  onSend: (message: string) => Promise<void>;
 }
 
 const QUICK_PROMPTS = [
@@ -33,50 +33,55 @@ export default function ChatPanel({ twin, chatHistory, onSend }: Props) {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim() || thinking) return;
     setThinking(true);
-    onSend(text);
     setInput("");
-    setTimeout(() => setThinking(false), 600);
+    try {
+      await onSend(text);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setThinking(false);
+    }
   };
 
   return (
-    <section className="glass-card p-5 md:p-6 flex flex-col h-full">
+    <section className="glass-card p-6 md:p-7 flex flex-col h-full">
       <h2 className="card-title">
-        <span className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-          <Bot className="w-4 h-4 text-teal-600" />
+        <span className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+          <Bot className="w-5.5 h-5.5 text-teal-600" strokeWidth={2.2} />
         </span>
         AI Health Assistant
       </h2>
 
-      <details className="mb-3 group">
-        <summary className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer flex items-center gap-1.5 list-none font-medium">
-          <Calendar className="w-3.5 h-3.5" />
+      <details className="mb-4 group">
+        <summary className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer flex items-center gap-1.5 list-none font-bold">
+          <Calendar className="w-4.5 h-4.5 text-teal-500" />
           Longitudinal Health Journey Timeline
           <span className="text-teal-400 group-open:rotate-90 transition-transform">▸</span>
         </summary>
-        <div className="mt-3 pl-3.5">
+        <div className="mt-4.5 pl-4">
           {twin.history.length > 0 ? (
             [...twin.history]
               .sort((a, b) => b.date.localeCompare(a.date))
               .map((rec, i) => (
                 <div key={i} className="timeline-item">
-                  <p className="text-[0.7rem] text-teal-500 mb-1 font-semibold">
+                  <p className="text-xs text-teal-500 mb-1 font-bold">
                     {rec.date} — {rec.recordType}
                   </p>
-                  <p className="text-xs text-teal-800">
-                    <span className="text-teal-400">Labs:</span>{" "}
+                  <p className="text-sm text-teal-800 font-medium">
+                    <span className="text-teal-500 font-semibold">Labs:</span>{" "}
                     {rec.labs.map((l) => `${l.metric}: ${l.value} ${l.unit}`).join(", ")}
                   </p>
-                  <p className="text-xs text-teal-800 mt-0.5">
-                    <span className="text-teal-400">Rx:</span>{" "}
+                  <p className="text-sm text-teal-800 mt-1 font-medium">
+                    <span className="text-teal-500 font-semibold">Rx:</span>{" "}
                     {rec.medications.length > 0 ? rec.medications.join(", ") : "None"}
                   </p>
                 </div>
               ))
           ) : (
-            <p className="text-sm text-teal-500/80 italic">Timeline empty. Load a profile to display historic records.</p>
+            <p className="text-base text-teal-500/80 italic">Timeline empty. Load a profile to display historic records.</p>
           )}
         </div>
       </details>
@@ -88,13 +93,13 @@ export default function ChatPanel({ twin, chatHistory, onSend }: Props) {
               <div className={`chat-avatar ${msg.role === "user" ? "user-avatar" : "agent-avatar"}`}>
                 {msg.role === "user" ? "U" : "AI"}
               </div>
-              <div className="chat-bubble whitespace-pre-line">{msg.text}</div>
+              <div className="chat-bubble whitespace-pre-line leading-relaxed">{msg.text}</div>
             </div>
           ))
         ) : (
-          <div className="text-teal-500 text-sm text-center my-auto px-4 flex flex-col items-center gap-2">
-            <Sparkles className="w-7 h-7 text-teal-400" />
-            <p>Ask the coordinator or select a quick clinical action below to begin.</p>
+          <div className="text-teal-500 text-base text-center my-auto px-4 flex flex-col items-center gap-3">
+            <Sparkles className="w-9 h-9 text-teal-400" />
+            <p className="font-semibold text-teal-600/90">Ask the coordinator or select a quick clinical action below to begin.</p>
           </div>
         )}
         {thinking && (
@@ -109,15 +114,15 @@ export default function ChatPanel({ twin, chatHistory, onSend }: Props) {
         )}
       </div>
 
-      <p className="text-xs text-teal-600 mb-2 font-medium">Quick Clinical Actions:</p>
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <p className="text-sm text-teal-600 mb-2.5 font-bold">Quick Clinical Actions:</p>
+      <div className="grid grid-cols-3 gap-2.5 mb-4">
         {QUICK_PROMPTS.map((qp) => (
           <button
             key={qp.label}
             onClick={() => send(qp.prompt)}
-            className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/55 border border-teal-200/70 text-teal-700 text-[0.72rem] font-semibold text-center hover:bg-teal-50 hover:border-teal-400 hover:-translate-y-0.5 transition-all"
+            className="flex flex-col items-center gap-2 px-3 py-4 rounded-xl bg-white/55 border border-teal-200/70 text-teal-700 text-xs md:text-sm font-bold text-center hover:bg-teal-50 hover:border-teal-400 hover:-translate-y-0.5 transition-all shadow-sm"
           >
-            <qp.icon className="w-4 h-4 text-teal-500" />
+            <qp.icon className="w-5 h-5 text-teal-500" />
             {qp.label}
           </button>
         ))}
@@ -128,7 +133,7 @@ export default function ChatPanel({ twin, chatHistory, onSend }: Props) {
           e.preventDefault();
           send(input);
         }}
-        className="flex gap-2"
+        className="flex gap-3"
       >
         <input
           type="text"
@@ -137,8 +142,8 @@ export default function ChatPanel({ twin, chatHistory, onSend }: Props) {
           placeholder="Type your question for the clinical agents..."
           className="input-field flex-1"
         />
-        <button type="submit" disabled={!input.trim() || thinking} className="btn-primary !w-11 !px-0">
-          <Send className="w-4 h-4" strokeWidth={2.5} />
+        <button type="submit" disabled={!input.trim() || thinking} className="btn-primary !w-13 !px-0">
+          <Send className="w-5 h-5" strokeWidth={2.5} />
         </button>
       </form>
     </section>

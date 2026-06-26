@@ -1,3 +1,8 @@
+/**
+ * Author: Mohibul Hoque
+ * Email: hokworks@gmail.com
+ * LinkedIn: linkedin.com/in/speedymohibul
+ */
 import type { LabResult, LabStatus, MedScanResult, PatientDigitalTwin } from "./types";
 
 export interface LatestLab {
@@ -27,8 +32,14 @@ export function getLatestLabs(twin: PatientDigitalTwin): LatestLab[] {
 
 export function classifyLab(metric: string, value: number): LabStatus {
   const n = metric.toLowerCase();
+  
   if (n.includes("alt")) {
     if (value > 55) return "abnormal";
+    if (value > 40) return "warning";
+    return "normal";
+  }
+  if (n.includes("ast") && !n.includes("fasting")) {
+    if (value > 50) return "abnormal";
     if (value > 40) return "warning";
     return "normal";
   }
@@ -42,9 +53,43 @@ export function classifyLab(metric: string, value: number): LabStatus {
     if (value >= 100) return "warning";
     return "normal";
   }
+  if (n.includes("hdl")) {
+    if (value < 40) return "abnormal";
+    if (value < 50) return "warning";
+    return "normal";
+  }
+  if (n.includes("cholesterol")) {
+    if (value >= 240) return "abnormal";
+    if (value >= 200) return "warning";
+    return "normal";
+  }
   if (n.includes("hba1c")) {
     if (value >= 6.5) return "abnormal";
     if (value >= 5.7) return "warning";
+    return "normal";
+  }
+  if (n.includes("glucose")) {
+    if (value >= 126 || value < 55) return "abnormal";
+    if (value >= 100 || value < 70) return "warning";
+    return "normal";
+  }
+  if (n.includes("platelet")) {
+    let val = value;
+    if (val < 1000) val *= 1000; // Normalise raw scale (e.g. 150 -> 150000)
+    if (val < 100000 || val > 500000) return "abnormal";
+    if (val < 150000 || val > 450000) return "warning";
+    return "normal";
+  }
+  if (n.includes("wbc") || n.includes("white blood cell")) {
+    let val = value;
+    if (val < 100) val *= 1000; // Normalise raw scale (e.g. 4.5 -> 4500)
+    if (val < 3000 || val > 15000) return "abnormal";
+    if (val < 4500 || val > 11000) return "warning";
+    return "normal";
+  }
+  if (n.includes("rbc") || n.includes("red blood cell")) {
+    if (value < 3.0 || value > 6.5) return "abnormal";
+    if (value < 3.8 || value > 5.8) return "warning";
     return "normal";
   }
   return "normal";
@@ -121,7 +166,8 @@ export interface OrganStatus {
 
 export function getOrganStatuses(twin: PatientDigitalTwin): OrganStatuses {
   const latest = new Map<string, LabResult & { date: string }>();
-  for (const record of twin.history) {
+  const sortedHistory = [...twin.history].sort((a, b) => a.date.localeCompare(b.date));
+  for (const record of sortedHistory) {
     for (const lab of record.labs) {
       latest.set(lab.metric.toLowerCase(), { ...lab, date: record.date });
     }
@@ -181,8 +227,38 @@ export function generateAgentResponse(query: string, twin: PatientDigitalTwin): 
   const creat = latest.find((l) => l.metric.toLowerCase().includes("creatinine"));
   const hba1c = latest.find((l) => l.metric.toLowerCase().includes("hba1c"));
 
-  if (q.includes("liver") || q.includes("alt")) {
-    const trend = twin.history
+  if (q.includes("pubmed") || q.includes("research") || q.includes("guideline")) {
+    return [
+      "**PubMed Research Agent** — Clinical Guideline Summary",
+      "",
+      "Fatty Liver (NAFLD):",
+      "• AASLD 2023 guidance recommends lifestyle modification as first-line; pioglitazone or vitamin E considered in biopsy-confirmed NASH.",
+      "",
+      "Hypertension:",
+      "• ACC/AHA 2017 guideline supports ACE inhibitor (e.g., Lisinopril) as first-line in patients with comorbid diabetes or CKD.",
+      "• Target BP < 130/80 mmHg for adults with cardiovascular risk factors.",
+      "",
+      "Sources: PubMed Central, Mayo Clinic, American College of Cardiology.",
+    ].join("\n");
+  }
+
+  if (q.includes("brief") || q.includes("doctor") || q.includes("appointment") || q.includes("visit") || q.includes("question")) {
+    return [
+      "**Doctor Preparation Agent** — Suggested Questions",
+      "",
+      "Based on your longitudinal trends, consider asking your primary care provider:",
+      "",
+      `1. My LDL has trended from ${ldl ? ldl.value : "—"} mg/dL — should we adjust statin dosing or add a PCSK9 inhibitor?`,
+      `2. Creatinine is now ${creat ? creat.value : "—"} mg/dL — is this early-stage renal impairment, and should metformin be re-evaluated?`,
+      `3. HbA1c is ${hba1c ? hba1c.value : "—"}% — am I approaching the pre-diabetes/diabetes threshold?`,
+      "4. Given the combined Simvastatin + Metformin + Lisinopril regimen, what renal and hepatic monitoring cadence do you recommend?",
+      "5. Are there lifestyle interventions that could reduce my medication load over the next 6 months?",
+    ].join("\n");
+  }
+
+  if (q.includes("liver") || q.includes("alt") || q.includes("ast")) {
+    const trend = [...twin.history]
+      .sort((a, b) => a.date.localeCompare(b.date))
       .map((r) => {
         const v = r.labs.find((l) => l.metric.toLowerCase() === "alt");
         return v ? `${r.date}: ${v.value} ${v.unit}` : null;
@@ -202,35 +278,6 @@ export function generateAgentResponse(query: string, twin: PatientDigitalTwin): 
         : alt?.status === "warning"
         ? "ALT is mildly elevated (40–55 U/L). Consider alcohol intake review, weight management, and a repeat panel in 8–12 weeks."
         : "ALT is within normal range. Continue current monitoring cadence.",
-    ].join("\n");
-  }
-
-  if (q.includes("brief") || q.includes("doctor") || q.includes("appointment")) {
-    return [
-      "**Doctor Preparation Agent** — Suggested Questions",
-      "",
-      "Based on your longitudinal trends, consider asking your primary care provider:",
-      "",
-      `1. My LDL has trended from ${ldl ? ldl.value : "—"} mg/dL — should we adjust statin dosing or add a PCSK9 inhibitor?`,
-      `2. Creatinine is now ${creat ? creat.value : "—"} mg/dL — is this early-stage renal impairment, and should metformin be re-evaluated?`,
-      `3. HbA1c is ${hba1c ? hba1c.value : "—"}% — am I approaching the pre-diabetes/diabetes threshold?`,
-      "4. Given the combined Simvastatin + Metformin + Lisinopril regimen, what renal and hepatic monitoring cadence do you recommend?",
-      "5. Are there lifestyle interventions that could reduce my medication load over the next 6 months?",
-    ].join("\n");
-  }
-
-  if (q.includes("pubmed") || q.includes("research") || q.includes("guideline")) {
-    return [
-      "**PubMed Research Agent** — Clinical Guideline Summary",
-      "",
-      "Fatty Liver (NAFLD):",
-      "• AASLD 2023 guidance recommends lifestyle modification as first-line; pioglitazone or vitamin E considered in biopsy-confirmed NASH.",
-      "",
-      "Hypertension:",
-      "• ACC/AHA 2017 guideline supports ACE inhibitor (e.g., Lisinopril) as first-line in patients with comorbid diabetes or CKD.",
-      "• Target BP < 130/80 mmHg for adults with cardiovascular risk factors.",
-      "",
-      "Sources: PubMed Central, Mayo Clinic, American College of Cardiology.",
     ].join("\n");
   }
 

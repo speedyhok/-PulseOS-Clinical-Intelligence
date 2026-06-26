@@ -46,8 +46,8 @@ export const EMPTY_PATIENT: PatientDigitalTwin = {
   history: [],
 };
 
-export const SAMPLE_CSV_TEMPLATE = `metric,value,unit
-ALT,72.0,U/L
-Creatinine,1.5,mg/dL
-LDL,155.0,mg/dL
-HbA1c,6.4,%`;
+export const SAMPLE_CSV_TEMPLATE = `metric,value,unit,medication
+ALT,72.0,U/L,Simvastatin 20mg
+Creatinine,1.5,mg/dL,Metformin 500mg
+LDL,155.0,mg/dL,Lisinopril 10mg
+HbA1c,6.4,%,`;
