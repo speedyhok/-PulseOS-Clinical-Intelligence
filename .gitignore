@@ -25,3 +25,10 @@ dist-ssr
 # Python Cache
 __pycache__/
 *.pyc
+
+# Virtual Environment
+.venv/
+
+# Agent/Tool Cache
+.agents/
+.bolt/
