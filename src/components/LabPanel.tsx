@@ -56,27 +56,30 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
 
         if (mi === -1 || vi === -1) throw new Error("CSV must have 'metric' and 'value' columns.");
         const labs: LabResult[] = [];
-        const medications: string[] = [];
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(",");
           const metric = (cols[mi] || "").trim();
           const value = parseFloat(cols[vi]);
           const unit = ui >= 0 ? (cols[ui] || "").trim() : "";
           const date = di >= 0 ? (cols[di] || "").trim() : undefined;
+          const medication = (medi >= 0 && cols[medi]) ? cols[medi].trim() : undefined;
           if (metric && !Number.isNaN(value)) {
-            labs.push({ metric, value, unit, ...(date ? { date } : {}) });
-          }
-          if (medi >= 0 && cols[medi]) {
-            const med = cols[medi].trim();
-            if (med) medications.push(med);
+            labs.push({
+              metric,
+              value,
+              unit,
+              ...(date ? { date } : {}),
+              ...(medication ? { medication } : {})
+            });
           }
         }
-        if (labs.length === 0 && medications.length === 0) {
-          throw new Error("No valid lab rows or medications found.");
+        if (labs.length === 0) {
+          throw new Error("No valid lab rows found.");
         }
-        onAddLabs(labs, medications);
-        const labMsg = labs.length > 0 ? `${labs.length} lab metric${labs.length === 1 ? "" : "s"}` : "";
-        const medMsg = medications.length > 0 ? `${medications.length} medication${medications.length === 1 ? "" : "s"}` : "";
+        const medCount = labs.filter((l) => l.medication).length;
+        onAddLabs(labs, []);
+        const labMsg = `${labs.length} lab metric${labs.length === 1 ? "" : "s"}`;
+        const medMsg = medCount > 0 ? `${medCount} medication${medCount === 1 ? "" : "s"}` : "";
         const joinMsg = labMsg && medMsg ? " and " : "";
         setUploadSuccess(`Added ${labMsg}${joinMsg}${medMsg} to the Digital Twin.`);
       } catch (e) {

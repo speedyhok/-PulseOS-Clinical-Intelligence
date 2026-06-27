@@ -101,6 +101,7 @@ class LabInput(BaseModel):
     value: float
     unit: str
     date: Optional[str] = None
+    medication: Optional[str] = None
 
 class AddLabsRequest(BaseModel):
     labs: List[LabInput]
@@ -154,7 +155,13 @@ async def add_labs(req: AddLabsRequest, session_id: str = Query(..., description
                 target_record = record
                 break
                 
-        new_lab = LabResult(metric=lab.metric, value=lab.value, unit=lab.unit, date=lab_date)
+        new_lab = LabResult(
+            metric=lab.metric,
+            value=lab.value,
+            unit=lab.unit,
+            date=lab_date,
+            medication=lab.medication
+        )
         
         if target_record:
             # Overwrite if the metric already exists for this date, otherwise append
@@ -167,6 +174,12 @@ async def add_labs(req: AddLabsRequest, session_id: str = Query(..., description
                 target_record.labs[existing_idx] = new_lab
             else:
                 target_record.labs.append(new_lab)
+            
+            # Associate medication with the date record
+            if lab.medication:
+                if lab.medication not in target_record.medications:
+                    target_record.medications.append(lab.medication)
+                    
             # Ensure record_type represents labs if labs are added
             if target_record.record_type != "Blood Test":
                 target_record.record_type = "Blood Test"
@@ -176,11 +189,11 @@ async def add_labs(req: AddLabsRequest, session_id: str = Query(..., description
                 date=lab_date,
                 record_type="Blood Test",
                 labs=[new_lab],
-                medications=[]
+                medications=[lab.medication] if lab.medication else []
             )
             twin.history.append(new_record)
             
-    # Process medications
+    # Process top-level medications (if sent separately in medications field, e.g. via direct add)
     if req.medications:
         today_str = datetime.today().strftime('%Y-%m-%d')
         target_record = None

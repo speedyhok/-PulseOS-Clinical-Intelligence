@@ -5,6 +5,7 @@ export interface LabResult {
   value: number;
   unit: string;
   date?: string;
+  medication?: string;
 }
 
 export interface HealthRecord {

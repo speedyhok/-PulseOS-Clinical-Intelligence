@@ -6,6 +6,7 @@ class LabResult(BaseModel):
     value: float          # e.g., 6.4
     unit: str             # e.g., "%", "U/L"
     date: Optional[str] = None
+    medication: Optional[str] = None
 
 class HealthRecord(BaseModel):
     date: str             # e.g., "2025-06-25"
