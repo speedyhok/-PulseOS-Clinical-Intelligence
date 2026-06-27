@@ -9,7 +9,7 @@ Developed by: **Mohibul Hoque** ([hokworks@gmail.com](mailto:hokworks@gmail.com)
 ## Live Demonstration
 
 The application is deployed and can be accessed online at:
-* **Production Live Site**: [https://pulse-os-clinical-intelligence-f3icj7g2z-hok-world.vercel.app]
+* **Production Live Site**: [https://pulse-os-clinical-intelligence-75t24xqyu-hok-world.vercel.app/]
 
 ---
 
