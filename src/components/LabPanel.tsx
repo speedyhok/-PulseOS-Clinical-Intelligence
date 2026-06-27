@@ -50,6 +50,7 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
         const mi = header.indexOf("metric");
         const vi = header.indexOf("value");
         const ui = header.indexOf("unit");
+        const di = header.indexOf("date");
         let medi = header.indexOf("medication");
         if (medi === -1) medi = header.indexOf("medications");
 
@@ -61,8 +62,9 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
           const metric = (cols[mi] || "").trim();
           const value = parseFloat(cols[vi]);
           const unit = ui >= 0 ? (cols[ui] || "").trim() : "";
+          const date = di >= 0 ? (cols[di] || "").trim() : undefined;
           if (metric && !Number.isNaN(value)) {
-            labs.push({ metric, value, unit });
+            labs.push({ metric, value, unit, ...(date ? { date } : {}) });
           }
           if (medi >= 0 && cols[medi]) {
             const med = cols[medi].trim();

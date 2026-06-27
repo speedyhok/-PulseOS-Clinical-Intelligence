@@ -100,6 +100,7 @@ class LabInput(BaseModel):
     metric: str
     value: float
     unit: str
+    date: Optional[str] = None
 
 class AddLabsRequest(BaseModel):
     labs: List[LabInput]
@@ -142,38 +143,64 @@ async def add_labs(req: AddLabsRequest, session_id: str = Query(..., description
     if not twin:
         twin = await init_patient_session(session_id, age=45)
     
-    new_labs = [
-        LabResult(metric=lab.metric, value=lab.value, unit=lab.unit)
-        for lab in req.labs
-    ]
-    new_meds = req.medications or []
-    
-    today_str = datetime.today().strftime('%Y-%m-%d')
-    
-    # Check if a record already exists for today
-    today_record = None
-    for record in twin.history:
-        if record.date == today_str:
-            today_record = record
-            break
-            
-    if today_record:
-        # Append new labs
-        today_record.labs.extend(new_labs)
-        # Append new medications without duplication
-        for med in new_meds:
-            if med not in today_record.medications:
-                today_record.medications.append(med)
-    else:
-        # Create a new record
-        new_record = HealthRecord(
-            date=today_str, 
-            record_type="Blood Test" if new_labs else "Prescription", 
-            labs=new_labs,
-            medications=new_meds
-        )
-        twin.history.append(new_record)
+    # Process each uploaded lab result
+    for lab in req.labs:
+        lab_date = lab.date or datetime.today().strftime('%Y-%m-%d')
         
+        # Check if a record already exists for this date
+        target_record = None
+        for record in twin.history:
+            if record.date == lab_date:
+                target_record = record
+                break
+                
+        new_lab = LabResult(metric=lab.metric, value=lab.value, unit=lab.unit, date=lab_date)
+        
+        if target_record:
+            # Overwrite if the metric already exists for this date, otherwise append
+            existing_idx = None
+            for idx, existing_lab in enumerate(target_record.labs):
+                if existing_lab.metric.lower() == lab.metric.lower():
+                    existing_idx = idx
+                    break
+            if existing_idx is not None:
+                target_record.labs[existing_idx] = new_lab
+            else:
+                target_record.labs.append(new_lab)
+            # Ensure record_type represents labs if labs are added
+            if target_record.record_type != "Blood Test":
+                target_record.record_type = "Blood Test"
+        else:
+            # Create a new record
+            new_record = HealthRecord(
+                date=lab_date,
+                record_type="Blood Test",
+                labs=[new_lab],
+                medications=[]
+            )
+            twin.history.append(new_record)
+            
+    # Process medications
+    if req.medications:
+        today_str = datetime.today().strftime('%Y-%m-%d')
+        target_record = None
+        for record in twin.history:
+            if record.date == today_str:
+                target_record = record
+                break
+        if target_record:
+            for med in req.medications:
+                if med not in target_record.medications:
+                    target_record.medications.append(med)
+        else:
+            new_record = HealthRecord(
+                date=today_str,
+                record_type="Prescription",
+                labs=[],
+                medications=req.medications
+            )
+            twin.history.append(new_record)
+            
     twin.history.sort(key=lambda x: x.date)
     await update_patient_digital_twin(session_id, twin)
     return to_camel(twin.model_dump())

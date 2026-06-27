@@ -4,6 +4,7 @@ export interface LabResult {
   metric: string;
   value: number;
   unit: string;
+  date?: string;
 }
 
 export interface HealthRecord {
