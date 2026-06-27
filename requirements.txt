@@ -1,5 +1,6 @@
 # Core Multi-Agent ADK Framework
 google-adk
+google-genai
 
 # Data Validation & Parsing
 pydantic
