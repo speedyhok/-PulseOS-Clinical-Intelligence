@@ -2,22 +2,23 @@ services:
   # 1. FastAPI Python Backend Service
   - type: web
     name: pulseos-backend
-    env: python
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: "3.11"
       - key: GEMINI_API_KEY
         sync: false # User will set this in Render UI
 
   # 2. Vite React Static Frontend Service
-  - type: static
+  - type: web
     name: pulseos-frontend
+    runtime: static
     buildCommand: npm install && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: "20"
       - key: VITE_API_URL
         sync: false # Set to your deployed backend public URL (e.g., https://pulseos-backend.onrender.com)
