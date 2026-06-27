@@ -17,8 +17,8 @@ export default function App() {
   const [twin, setTwin] = useState<PatientDigitalTwin>(EMPTY_PATIENT);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [sessionId] = useState<string>(() => {
-    const id = localStorage.getItem("pulseos_session_id") || crypto.randomUUID();
-    localStorage.setItem("pulseos_session_id", id);
+    const id = sessionStorage.getItem("pulseos_session_id") || crypto.randomUUID();
+    sessionStorage.setItem("pulseos_session_id", id);
     return id;
   });
 
