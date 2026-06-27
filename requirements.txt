@@ -12,8 +12,6 @@ requests
 mcp
 fastmcp
 
-# Web Frontend Dashboard
-streamlit
 
 # FastAPI Backend & Web Server
 fastapi
