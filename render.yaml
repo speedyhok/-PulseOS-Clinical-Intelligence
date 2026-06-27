@@ -1,0 +1,22 @@
+services:
+  # 1. FastAPI Python Backend Service
+  - type: web
+    name: pulseos-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # User will set this in Render UI
+
+  # 2. Vite React Static Frontend Service
+  - type: static
+    name: pulseos-frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: pulseos-backend
+          property: host

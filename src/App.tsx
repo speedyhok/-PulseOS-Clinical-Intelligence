@@ -11,6 +11,7 @@ import ChatPanel from "./components/ChatPanel";
 import { EMPTY_PATIENT } from "./lib/demoData";
 import { getOrganStatuses } from "./lib/clinical";
 import type { ChatMessage, LabResult, PatientDigitalTwin } from "./lib/types";
+import { API_BASE_URL } from "./config";
 
 export default function App() {
   const [twin, setTwin] = useState<PatientDigitalTwin>(EMPTY_PATIENT);
@@ -24,7 +25,7 @@ export default function App() {
   const organStatuses = useMemo(() => getOrganStatuses(twin), [twin]);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/patient?session_id=${sessionId}`)
+    fetch(`${API_BASE_URL}/api/patient?session_id=${sessionId}`)
       .then((res) => res.json())
       .then((data) => setTwin(data))
       .catch((err) => console.error("Error loading patient digital twin:", err));
@@ -32,8 +33,8 @@ export default function App() {
 
   const loadDemo = async () => {
     try {
-      await fetch(`http://localhost:8000/api/patient/load_demo?session_id=${sessionId}`, { method: "POST" });
-      const res = await fetch(`http://localhost:8000/api/patient?session_id=${sessionId}`);
+      await fetch(`${API_BASE_URL}/api/patient/load_demo?session_id=${sessionId}`, { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/patient?session_id=${sessionId}`);
       const data = await res.json();
       setTwin(data);
       setChatHistory([]);
@@ -44,8 +45,8 @@ export default function App() {
 
   const reset = async () => {
     try {
-      await fetch(`http://localhost:8000/api/patient/reset?session_id=${sessionId}`, { method: "POST" });
-      const res = await fetch(`http://localhost:8000/api/patient?session_id=${sessionId}`);
+      await fetch(`${API_BASE_URL}/api/patient/reset?session_id=${sessionId}`, { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/api/patient?session_id=${sessionId}`);
       const data = await res.json();
       setTwin(data);
       setChatHistory([]);
@@ -56,7 +57,7 @@ export default function App() {
 
   const addLabs = async (labs: LabResult[], medications?: string[]) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/labs/add?session_id=${sessionId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/labs/add?session_id=${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ labs, medications }),
@@ -72,7 +73,7 @@ export default function App() {
     const userMsg: ChatMessage = { role: "user", text };
     setChatHistory((prev) => [...prev, userMsg]);
     try {
-      const response = await fetch(`http://localhost:8000/api/chat?session_id=${sessionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/chat?session_id=${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
@@ -83,7 +84,7 @@ export default function App() {
       const data = await response.json();
       setChatHistory((prev) => [...prev, { role: "agent", text: data.response }]);
 
-      const twinRes = await fetch(`http://localhost:8000/api/patient?session_id=${sessionId}`);
+      const twinRes = await fetch(`${API_BASE_URL}/api/patient?session_id=${sessionId}`);
       const updatedTwin = await twinRes.json();
       setTwin(updatedTwin);
     } catch (e) {

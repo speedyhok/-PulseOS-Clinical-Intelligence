@@ -3,6 +3,7 @@ import { AlertTriangle, FileUp, Pill, Search, ShieldCheck, Upload } from "lucide
 import type { LabResult, MedScanResult, PatientDigitalTwin } from "../lib/types";
 import { getActiveMedications, getLatestLabs, type LatestLab } from "../lib/clinical";
 import { SAMPLE_CSV_TEMPLATE } from "../lib/demoData";
+import { API_BASE_URL } from "../config";
 
 interface Props {
   twin: PatientDigitalTwin;
@@ -87,7 +88,7 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
     setScanning(true);
     setScanResult(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/meds/scan?session_id=${sessionId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/meds/scan?session_id=${sessionId}`, {
         method: "POST"
       });
       const data = await res.json();
