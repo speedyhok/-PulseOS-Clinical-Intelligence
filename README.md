@@ -10,6 +10,8 @@ Developed by: **Mohibul Hoque** ([hokworks@gmail.com](mailto:hokworks@gmail.com)
 
 The application is deployed and can be accessed online at:
 * **Production Live Site**: [https://pulse-os-clinical-intelligence-75t24xqyu-hok-world.vercel.app/]
+* **Input Report Samples**: [https://drive.google.com/drive/folders/1leMVkBHILps6SOg8tHTokuIwMXd9WxBk?usp=drive_link]
+  
 
 ---
 
