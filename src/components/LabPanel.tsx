@@ -37,9 +37,39 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
     setNewMed("");
   };
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setUploadError(null);
     setUploadSuccess(null);
+
+    if (file.name.toLowerCase().endsWith(".pdf")) {
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/labs/upload-pdf?session_id=${sessionId}`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          throw new Error(`Server returned status ${res.status}`);
+        }
+        const updatedTwin = await res.json();
+        // Extract labs/meds count for success notification
+        let totalLabs = 0;
+        let totalMeds = 0;
+        if (updatedTwin.history && updatedTwin.history.length > 0) {
+          const latestRecord = updatedTwin.history[updatedTwin.history.length - 1];
+          totalLabs = latestRecord.labs ? latestRecord.labs.length : 0;
+          totalMeds = latestRecord.medications ? latestRecord.medications.length : 0;
+        }
+        // Force refresh parent state
+        onAddLabs([], []);
+        setUploadSuccess(`Successfully parsed PDF report (${totalLabs} lab metrics and ${totalMeds} active medications extracted).`);
+      } catch (e) {
+        setUploadError(`Error processing PDF report: ${(e as Error).message}`);
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result || "");
@@ -154,13 +184,13 @@ export default function LabPanel({ twin, onAddLabs, sessionId }: Props) {
           <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
             <Upload className="w-6 h-6 text-teal-600" />
           </div>
-          <p className="text-base text-teal-800 font-bold">Upload laboratory blood test report (CSV)</p>
-          <p className="text-xs text-teal-500 font-medium">Click to browse or drag &amp; drop a file</p>
+          <p className="text-base text-teal-800 font-bold">Upload laboratory blood test report (PDF or CSV)</p>
+          <p className="text-xs text-teal-500 font-medium">Click to browse or drag &amp; drop a PDF or CSV file</p>
         </div>
         <input
           ref={fileRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.pdf"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];

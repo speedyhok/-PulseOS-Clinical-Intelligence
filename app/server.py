@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -23,6 +23,7 @@ from app.main import (
 # Import clinical database tools
 from mcp_servers.medical_db import check_drug_interaction
 from app.schema import PatientDigitalTwin, HealthRecord, LabResult
+from app.pdf_parser import parse_pdf_report
 
 app = FastAPI(title="PulseOS Backend API")
 
@@ -216,6 +217,54 @@ async def add_labs(req: AddLabsRequest, session_id: str = Query(..., description
             
     twin.history.sort(key=lambda x: x.date)
     await update_patient_digital_twin(session_id, twin)
+    return to_camel(twin.model_dump())
+
+@app.post("/api/labs/upload-pdf")
+async def upload_pdf_lab_report(file: UploadFile = File(...), session_id: str = Query(..., description="Unique session ID")):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only .pdf files are supported for this endpoint")
+    
+    twin = await get_patient_digital_twin(session_id)
+    if not twin:
+        twin = await init_patient_session(session_id, age=45)
+    
+    pdf_contents = await file.read()
+    parsed_record = parse_pdf_report(pdf_contents)
+    
+    if parsed_record and (parsed_record.labs or parsed_record.medications):
+        target_date = parsed_record.date or datetime.today().strftime('%Y-%m-%d')
+        
+        # Check if record exists for this date
+        target_record = None
+        for record in twin.history:
+            if record.date == target_date:
+                target_record = record
+                break
+                
+        if target_record:
+            # Update/append labs
+            for lab in parsed_record.labs:
+                existing_idx = None
+                for idx, existing_lab in enumerate(target_record.labs):
+                    if existing_lab.metric.lower() == lab.metric.lower():
+                        existing_idx = idx
+                        break
+                if existing_idx is not None:
+                    target_record.labs[existing_idx] = lab
+                else:
+                    target_record.labs.append(lab)
+            # Update medications
+            for med in parsed_record.medications:
+                if med not in target_record.medications:
+                    target_record.medications.append(med)
+            if target_record.record_type != "Blood Test":
+                target_record.record_type = "Blood Test"
+        else:
+            twin.history.append(parsed_record)
+
+        twin.history.sort(key=lambda x: x.date)
+        await update_patient_digital_twin(session_id, twin)
+
     return to_camel(twin.model_dump())
 
 def generate_fallback_agent_response(query: str, twin_data: dict) -> str:
