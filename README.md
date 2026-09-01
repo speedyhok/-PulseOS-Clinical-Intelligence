@@ -109,17 +109,9 @@ Ensure you have Python 3.11+ and Node.js (v18+) installed on your machine.
 
 ## Clinical Data Ingestion
 
-Patients can upload lab results in a CSV format.
+Patients can upload lab results in PDF or CSV format.
 
-### CSV Layout Guidelines
-To successfully parse and process custom records, ensure your CSV file includes the headers `metric` and `value` (columns `unit` and `medication` are optional but recommended). Here is a sample format:
 
-```csv
-metric,value,unit,medication
-ALT,72.0,U/L,Simvastatin 20mg
-Creatinine,1.5,mg/dL,Metformin 500mg
-LDL,155.0,mg/dL,Lisinopril 10mg
-HbA1c,6.4,%,
 ```
 
 Alternatively, you can test the entire multi-agent dashboard instantly by clicking the **Load Demo Profile** button inside the console.
