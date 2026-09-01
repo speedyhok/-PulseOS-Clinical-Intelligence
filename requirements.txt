@@ -4,6 +4,9 @@ google-genai
 
 # Data Validation & Parsing
 pydantic
+pypdf
+python-multipart
+reportlab
 
 # HTTP Requests (for live RxNorm and PubMed APIs)
 requests
@@ -12,8 +15,6 @@ requests
 mcp
 fastmcp
 
-
 # FastAPI Backend & Web Server
 fastapi
 uvicorn
-
